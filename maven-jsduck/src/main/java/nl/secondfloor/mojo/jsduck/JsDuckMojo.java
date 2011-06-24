@@ -18,6 +18,23 @@ import org.jruby.embed.ScriptingContainer;
  * @goal jsduck
  */
 public class JsDuckMojo extends AbstractMojo {
+    
+    /**
+     * The javascript source directory to generate documentation for.
+     * @parameter expression="${jsduck.javascriptDirectory}" default-value="src/main/webapp/js"
+     */
+    private String javascriptDirectory;
+    /**
+     * The target directory to generate the API documentation in.
+     * @parameter expression="${jsduck.targetDirectory}" default-value="src/main/webapp/api"
+     */
+    private String targetDirectory;
+    /**
+     * Set to <code>true</code> to print feedback while running.
+     * @parameter expression="${jsduck.verbose}" default-value="false"
+     */
+    private boolean verbose;
+    
     public void execute() throws MojoExecutionException {
         getLog().info("Producing JavaScript API documentation using jsduck.");
         getLog().info(String.format("Using javascript directory: %s.", ""));
@@ -46,12 +63,9 @@ public class JsDuckMojo extends AbstractMojo {
             BufferedReader scriptReader = new BufferedReader(scriptInputStreamReader);
             String script = IOUtils.toString(scriptReader);
             
-//            input_path = "src/main/webapp/js"
-//                    output_path = "src/main/webapp/api"
-//                    verbose = true
-//            jruby.put("input_path", "");
-//            jruby.put("output_path", "");
-//            jruby.put("verbose", "");
+            jruby.put("input_path", javascriptDirectory);
+            jruby.put("output_path", targetDirectory);
+            jruby.put("verbose", verbose);
 
             jruby.runScriptlet(script);
         } catch (IOException e) {

@@ -17,10 +17,6 @@ end
 require 'jsduck/app'
 require 'optparse'
 
-input_path = "src/main/webapp/js"
-output_path = "src/main/webapp/api"
-verbose = true
-
 app = JsDuck::App.new
 
 app.output_dir = output_path
