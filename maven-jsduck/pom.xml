@@ -23,7 +23,12 @@
     <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby</artifactId>
-      <version>1.1.6</version>
+      <version>1.6.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jruby</groupId>
+      <artifactId>jruby-complete</artifactId>
+      <version>1.6.0</version>
     </dependency>
     <dependency>
       <groupId>com.sun.script.jruby</groupId>
@@ -40,6 +45,21 @@
       <groupId>javax.script</groupId>
       <artifactId>script-api</artifactId>
       <version>1.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>jsduck</groupId>
+      <artifactId>jsduck</artifactId>
+      <version>0.6</version>
+      <classifier>all-gems</classifier>
+    </dependency>
+    
+    <dependency>
+    	<groupId>commons-io</groupId>
+    	<artifactId>commons-io</artifactId>
+    	<version>2.0.1</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
     </dependency>
   </dependencies>
   <build>
