@@ -47,8 +47,8 @@ public class JsDuckMojo extends AbstractMojo {
     private boolean verbose;
 
     public void execute() throws MojoExecutionException {
+        getLog().info("Producing JavaScript API documentation using jsduck.");
         if (verbose) {
-            getLog().info("Producing JavaScript API documentation using jsduck.");
             getLog().info(String.format("Using javascript directory: %s.", new File(javascriptDirectory).getAbsolutePath()));
             getLog().info(String.format("Using target directory: %s.", new File(targetDirectory).getAbsolutePath()));
         }
