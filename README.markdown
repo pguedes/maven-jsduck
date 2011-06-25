@@ -3,10 +3,12 @@ Introduction
 
 maven-jsduck is a maven plugin that produces javascript API documentation using [jsduck](http://rubygems.org/gems/jsduck).
 
-The lib directories of jsduck version 0.6 and it's dependencies are unrolled in src/main/resources.
+It utilizes [JRuby](http://www.jruby.org/) to run; the lib directories of [jsduck](http://rubygems.org/gems/jsduck)
+version 0.6 and it's dependencies are unrolled in src/main/resources.
 
-The Markdown implementation used by jsduck is RDiscount which is written in C, this was replaced by
-a native java implementation ([markdownj](http://code.google.com/p/markdownj/)) to allow for better portability and performance.
+The [Markdown](http://daringfireball.net/projects/markdown/) implementation used by [jsduck](http://rubygems.org/gems/jsduck)
+is [RDiscount](http://rubygems.org/gems/rdiscount) which is written in C; this was replaced by a native java implementation
+([markdownj](http://code.google.com/p/markdownj/)) to allow for better portability and performance.
 
 
 Usage
