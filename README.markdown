@@ -39,9 +39,9 @@ Clean
 Configuration
 -------------
 
-| parameter              | description                                               | default               |
-|:----------------------:|----------------------------------------------------------:|:---------------------:|
-|  verbose               | Enable or disable more logging.                           |        true           |
+| *parameter*            | *description*                                             | *default*             |
+|:-----------------------|:----------------------------------------------------------|:----------------------|
+|  verbose               | Enable or disable more logging.                           |  true                 |
 |  javascriptDirectory   | The directory containing the javascript files to document.|  src/main/webapp/js   |
 |  targetDirectory       | The directory to write the API documentation to.          |  src/main/webapp/api  |
 
