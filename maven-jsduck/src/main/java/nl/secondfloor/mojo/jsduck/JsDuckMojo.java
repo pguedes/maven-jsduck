@@ -44,8 +44,8 @@ public class JsDuckMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException {
         getLog().info("Producing JavaScript API documentation using jsduck.");
-        getLog().info(String.format("Using javascript directory: %s.", ""));
-        getLog().info(String.format("Using target directory: %s.", ""));
+        getLog().info(String.format("Using javascript directory: %s.", javascriptDirectory));
+        getLog().info(String.format("Using target directory: %s.", targetDirectory));
 
         ScriptingContainer jruby = new ScriptingContainer();
 

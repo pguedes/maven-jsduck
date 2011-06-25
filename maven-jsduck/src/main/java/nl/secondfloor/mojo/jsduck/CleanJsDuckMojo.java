@@ -29,7 +29,7 @@ public class CleanJsDuckMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         if (verbose) {
             getLog().info("Cleaning generated JavaScript API documentation.");
-            getLog().info(String.format("Using target directory: %s.", ""));
+            getLog().info(String.format("Using target directory: %s.", targetDirectory));
         }
 
         File templateDir = new File(targetDirectory);
