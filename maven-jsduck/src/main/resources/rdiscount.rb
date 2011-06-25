@@ -1,4 +1,4 @@
-require 'java'
+include Java
 
 # fake RDiscount API to satisfy RDiscount dependency of jsduck.
 # RDiscount uses C code by loading a .so file, which won't work in jruby and is not portable.
@@ -10,7 +10,7 @@ class RDiscount
 
   def initialize(text)
     @text  = text
-    @markdown = com.petebevin.markdown.MarkDownProcessor.new()
+    @markdown = com.petebevin.markdown.MarkdownProcessor.new()
   end
 
 end
