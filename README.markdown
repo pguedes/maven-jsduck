@@ -79,3 +79,5 @@ Wishlist
 * Figure out how Atlassian generated their JIRA REST/HTTP API doc and find a way to incorporate something like that as well
 * Investigate if it is possible to do delta generation to sync the API doc with the current state instead of having to clean and regenerate
 * Wrap jsduck logging in the maven plugin's log framework
+* Allow usage of customized templates.
+* Accept multiple directories for javascriptDirectory.
