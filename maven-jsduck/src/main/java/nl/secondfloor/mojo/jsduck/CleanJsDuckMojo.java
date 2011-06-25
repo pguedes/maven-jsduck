@@ -1,9 +1,12 @@
 package nl.secondfloor.mojo.jsduck;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+
+import de.schlichtherle.truezip.file.TFile;
 
 /**
  * Cleans up the generated jsduck documentation.
@@ -32,7 +35,10 @@ public class CleanJsDuckMojo extends AbstractMojo {
             getLog().info(String.format("Using target directory: %s.", targetDirectory));
         }
 
-        File templateDir = new File(targetDirectory);
-        templateDir.delete();
+        try {
+            TFile.rm_r(new File(targetDirectory));
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to remove targetDirectory.", e);
+        }
     }
 }
