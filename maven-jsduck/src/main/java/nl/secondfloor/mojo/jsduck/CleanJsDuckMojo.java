@@ -25,7 +25,7 @@ public class CleanJsDuckMojo extends AbstractMojo {
     /**
      * Set to <code>true</code> to print feedback while running.
      * 
-     * @parameter expression="${jsduck.verbose}" default-value="false"
+     * @parameter expression="${jsduck.verbose}" default-value="true"
      */
     private boolean verbose;
 
