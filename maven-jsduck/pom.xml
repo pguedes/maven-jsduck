@@ -55,6 +55,12 @@
       <version>7.1.4</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>de.schlichtherle.truezip</groupId>
+      <artifactId>truezip-driver-zip</artifactId>
+      <version>7.1.4</version>
+      <scope>compile</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.markdownj</groupId>
