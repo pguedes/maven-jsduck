@@ -6,11 +6,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.jruby.embed.ScriptingContainer;
+
+import de.schlichtherle.truezip.file.TFile;
 
 /**
  * Executes jsduck on the configured javascript directory to produce api documentation.
@@ -44,17 +45,13 @@ public class JsDuckMojo extends AbstractMojo {
 
         File templateDir = new File("target/jsduck_template");
         if (!templateDir.exists()) {
-            final File templates;
             try {
-                templates = new File(this.getClass().getClassLoader().getResource("template").toURI());
+                TFile tFile = new TFile(this.getClass().getClassLoader().getResource("template").toURI());
+                tFile.cp_rp(templateDir);
             } catch (URISyntaxException e) {
                 throw new MojoExecutionException("Failed to prepare template directory.", e);
-            }
-
-            try {
-                FileUtils.copyDirectory(templates, templateDir);
             } catch (IOException e) {
-                throw new MojoExecutionException("Failed to copy templates.", e);
+                throw new MojoExecutionException("Failed to populate template directory.", e);
             }
         }
 
