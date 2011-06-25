@@ -14,15 +14,23 @@ http://code.google.com/p/markdownj/
 Usage
 =====
 Get
-	$ git clone git://github.com/pguedes/maven-jsduck.git
+```sh
+    $ git clone git://github.com/pguedes/maven-jsduck.git
+```
 Install
-	$ cd maven-jsduck/maven-jsduck
-	$ mvn install
+```sh
+    $ cd maven-jsduck/maven-jsduck
+    $ mvn install
+```
 Run
-	$ cd ~/myproject
-	$ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:jsduck
+```sh
+    $ cd ~/myproject
+    $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:jsduck
+```
 To clean
-	$ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:clean-jsduck
+```sh
+    $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:clean-jsduck
+```
 
 Configuration
 =============
@@ -32,22 +40,24 @@ Configuration
 Maven
 =====
 To automatically run the clean-jsduck goal during clean add the following to your pom.xml:
-	<build>
-	  <plugins>
-	    <plugin>
-	      <groupId>nl.secondfloor.mojo.jsduck</groupId>
-	      <artifactId>jsduck-maven-plugin</artifactId>
-	      <executions>
-	        <execution>
-	          <phase>clean</phase>
-	          <goals>
-	            <goal>clean-jsduck</goal>
-	          </goals>
-	        </execution>
-	      </executions>
-	    </plugin>
-	  </plugins>
-	</build>
+```xml
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>nl.secondfloor.mojo.jsduck</groupId>
+          <artifactId>jsduck-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>clean</phase>
+              <goals>
+                <goal>clean-jsduck</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+```
 
 Wishlist
 ========
