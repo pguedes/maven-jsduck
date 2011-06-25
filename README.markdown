@@ -45,7 +45,7 @@ Configuration
 |  javascriptDirectory   | The directory containing the javascript files to document.|  src/main/webapp/js   |
 |  targetDirectory       | The directory to write the API documentation to.          |  src/main/webapp/api  |
 
-To add configure while running commandline use the plugin name as prefix: -Djsduck.verbose=false.
+To change the configuration while running commandline use the plugin name as prefix: -Djsduck.verbose=false.
 
 Maven
 -----
