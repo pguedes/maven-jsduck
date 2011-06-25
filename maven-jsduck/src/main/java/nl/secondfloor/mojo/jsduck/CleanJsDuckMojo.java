@@ -32,13 +32,16 @@ public class CleanJsDuckMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         if (verbose) {
             getLog().info("Cleaning generated JavaScript API documentation.");
-            getLog().info(String.format("Using target directory: %s.", targetDirectory));
         }
+        File targetDir = new File(targetDirectory);
+        if (targetDir.exists()) {
+            getLog().info(String.format("Deleting %s", targetDir.getAbsolutePath()));
 
-        try {
-            TFile.rm_r(new File(targetDirectory));
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to remove targetDirectory.", e);
+            try {
+                TFile.rm_r(targetDir);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to remove targetDirectory.", e);
+            }
         }
     }
 }
