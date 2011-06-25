@@ -28,18 +28,24 @@ Run
 
 ```sh
     $ cd ~/myproject
-    $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:jsduck
+    $ mvn jsduck:jsduck
 ```
-To clean
+Clean
 
 ```sh
-    $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:clean-jsduck
+    $ mvn jsduck:clean-jsduck
 ```
 
 Configuration
 -------------
 
+| parameter              | description                                               | default               |
+|:----------------------:|----------------------------------------------------------:|:---------------------:|
+|  verbose               | Enable or disable more logging.                           |        true           |
+|  javascriptDirectory   | The directory containing the javascript files to document.|  src/main/webapp/js   |
+|  targetDirectory       | The directory to write the API documentation to.          |  src/main/webapp/api  |
 
+To add configure while running commandline use the plugin name as prefix: -Djsduck.verbose=false.
 
 Maven
 -----
@@ -59,6 +65,9 @@ To automatically run the clean-jsduck goal during clean add the following to you
               </goals>
             </execution>
           </executions>
+          <configuration>
+            <verbose>false</verbose>
+          </configuration>
         </plugin>
       </plugins>
     </build>
@@ -69,3 +78,4 @@ Wishlist
 * Embed javadoc documentation in the same documentation browser to have a full API documentation pack
 * Figure out how Atlassian generated their JIRA REST/HTTP API doc and find a way to incorporate something like that as well
 * Investigate if it is possible to do delta generation to sync the API doc with the current state instead of having to clean and regenerate
+* Wrap jsduck logging in the maven plugin's log framework
