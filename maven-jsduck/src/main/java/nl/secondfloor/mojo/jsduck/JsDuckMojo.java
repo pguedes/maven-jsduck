@@ -14,28 +14,34 @@ import org.jruby.embed.ScriptingContainer;
 import de.schlichtherle.truezip.file.TFile;
 
 /**
- * Executes jsduck on the configured javascript directory to produce api documentation.
+ * Executes jsduck on the configured javascript directory to produce api
+ * documentation.
  * 
  * @goal jsduck
  */
 public class JsDuckMojo extends AbstractMojo {
-    
+
     /**
      * The javascript source directory to generate documentation for.
-     * @parameter expression="${jsduck.javascriptDirectory}" default-value="src/main/webapp/js"
+     * 
+     * @parameter expression="${jsduck.javascriptDirectory}"
+     *            default-value="src/main/webapp/js"
      */
     private String javascriptDirectory;
     /**
      * The target directory to generate the API documentation in.
-     * @parameter expression="${jsduck.targetDirectory}" default-value="src/main/webapp/api"
+     * 
+     * @parameter expression="${jsduck.targetDirectory}"
+     *            default-value="src/main/webapp/api"
      */
     private String targetDirectory;
     /**
      * Set to <code>true</code> to print feedback while running.
+     * 
      * @parameter expression="${jsduck.verbose}" default-value="false"
      */
     private boolean verbose;
-    
+
     public void execute() throws MojoExecutionException {
         getLog().info("Producing JavaScript API documentation using jsduck.");
         getLog().info(String.format("Using javascript directory: %s.", ""));
@@ -56,10 +62,11 @@ public class JsDuckMojo extends AbstractMojo {
         }
 
         try {
-            InputStreamReader scriptInputStreamReader = new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("jsduck.rb"));
+            InputStreamReader scriptInputStreamReader = new InputStreamReader(getClass().getClassLoader()
+                    .getResourceAsStream("maven_jsduck.rb"));
             BufferedReader scriptReader = new BufferedReader(scriptInputStreamReader);
             String script = IOUtils.toString(scriptReader);
-            
+
             jruby.put("input_path", javascriptDirectory);
             jruby.put("output_path", targetDirectory);
             jruby.put("verbose", verbose);
