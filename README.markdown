@@ -14,20 +14,24 @@ http://code.google.com/p/markdownj/
 Usage
 =====
 Get
+
 ```sh
     $ git clone git://github.com/pguedes/maven-jsduck.git
 ```
 Install
+
 ```sh
     $ cd maven-jsduck/maven-jsduck
     $ mvn install
 ```
 Run
+
 ```sh
     $ cd ~/myproject
     $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:jsduck
 ```
 To clean
+
 ```sh
     $ mvn -Djsduck.verbose=true nl.secondfloor.mojo.jsduck:jsduck-maven-plugin:clean-jsduck
 ```
@@ -40,6 +44,7 @@ Configuration
 Maven
 =====
 To automatically run the clean-jsduck goal during clean add the following to your pom.xml:
+
 ```xml
     <build>
       <plugins>
