@@ -41,31 +41,25 @@
         </exclusion>
       </exclusions>
     </dependency>
+
     <dependency>
-      <groupId>javax.script</groupId>
-      <artifactId>script-api</artifactId>
-      <version>1.0</version>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.0.1</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>de.schlichtherle.truezip</groupId>
+      <artifactId>truezip-file</artifactId>
+      <version>7.1.4</version>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
-      <groupId>jsduck</groupId>
-      <artifactId>jsduck</artifactId>
-      <version>0.6</version>
-      <classifier>all-gems</classifier>
-    </dependency>
-    
-    <dependency>
-    	<groupId>commons-io</groupId>
-    	<artifactId>commons-io</artifactId>
-    	<version>2.0.1</version>
-    	<type>jar</type>
-    	<scope>compile</scope>
-    </dependency>
-    <dependency>
-    	<groupId>de.schlichtherle.truezip</groupId>
-    	<artifactId>truezip-file</artifactId>
-    	<version>7.1.4</version>
-    	<scope>compile</scope>
+      <groupId>org.markdownj</groupId>
+      <artifactId>markdownj</artifactId>
+      <version>0.3.0-1.0.2b4</version>
     </dependency>
   </dependencies>
   <build>
@@ -112,10 +106,15 @@
       <name>Java.net Repository for Maven 2</name>
       <url>http://download.java.net/maven/2/</url>
     </repository>
-        <repository>
-          <id>dist.codehaus.org/mule</id>
-          <name>Mule Repository for Maven 2</name>
-          <url>http://dist.codehaus.org/mule/dependencies/maven2/</url>
-        </repository>
+    <repository>
+      <id>dist.codehaus.org/mule</id>
+      <name>Mule Repository for Maven 2</name>
+      <url>http://dist.codehaus.org/mule/dependencies/maven2/</url>
+    </repository>
+    <repository>
+      <id>scala-tools</id>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
+
   </repositories>
 </project>
