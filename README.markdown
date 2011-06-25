@@ -77,6 +77,7 @@ Wishlist
 --------
 * Embed javadoc documentation in the same documentation browser to have a full API documentation pack
 * Figure out how Atlassian generated their JIRA REST/HTTP API doc and find a way to incorporate something like that as well
+  * (Update) appears to be xslt on jersey's wadl output with some additional javadoc tag support
 * Investigate if it is possible to do delta generation to sync the API doc with the current state instead of having to clean and regenerate
 * Wrap jsduck logging in the maven plugin's log framework
 * Allow usage of customized templates.
