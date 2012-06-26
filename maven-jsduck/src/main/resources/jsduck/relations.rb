@@ -4,20 +4,26 @@ module JsDuck
   #
   # Also provides a place to look up classes by name.
   #
-  # The constructor is initialized with array of all available
-  # classes.
+  # The constructor is initialized with array of all available classes
+  # and list of class names to ignore.  By default the latter list
+  # contains only JavaScript base class "Object".
   class Relations
     # Returns list of all classes
     attr_reader :classes
 
-    def initialize(classes = [])
+    def initialize(classes = [], ignorables = [])
       @classes = classes
+      @ignorables = {}
+      ignorables.each {|classname| @ignorables[classname] = true }
 
       # First build class lookup table; building lookup tables for
       # mixins and subclasses will depend on that.
       @lookup = {}
       @classes.each do |cls|
         @lookup[cls.full_name] = cls
+        (cls[:alternateClassNames] || []).each do |alt_name|
+          @lookup[alt_name] = cls
+        end
         cls.relations = self
       end
 
@@ -34,8 +40,19 @@ module JsDuck
       @lookup[classname]
     end
 
+    # Returns true if class is in list of ignored classes.
+    def ignore?(classname)
+      @ignorables[classname]
+    end
+
     def each(&block)
       @classes.each(&block)
+    end
+
+    # Returns list of all classes.  This method allows us to treat
+    # Relations as array and therefore easily mock it
+    def to_a
+      @classes
     end
 
     def reg_subclasses(cls)

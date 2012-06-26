@@ -1,7 +1,7 @@
 require 'jsduck/js_parser'
 require 'jsduck/css_parser'
 require 'jsduck/merger'
-require "cgi"
+require 'jsduck/html'
 
 module JsDuck
 
@@ -15,14 +15,17 @@ module JsDuck
     attr_reader :docs
     attr_reader :html_filename
 
-    def initialize(contents, filename="")
+    def initialize(contents, filename="", options={})
       @contents = contents
       @filename = filename
+      @options = options
       @html_filename = ""
       @links = {}
 
       merger = Merger.new
+      merger.filename = @filename
       @docs = parse.map do |docset|
+        merger.linenr = docset[:linenr]
         link(docset[:linenr], merger.merge(docset[:comment], docset[:code]))
       end
     end
@@ -37,9 +40,9 @@ module JsDuck
     def html_filename=(html_filename)
       @html_filename = html_filename
       @links.each_value do |line|
-        line.each do |doc|
-          doc[:html_filename] = @html_filename
-          doc[:href] = @html_filename + "#" + id(doc)
+        line.each do |link|
+          link[:file][:html_filename] = @html_filename
+          link[:file][:href] = @html_filename + "#" + id(link[:doc])
         end
       end
     end
@@ -51,11 +54,11 @@ module JsDuck
       # Use #each_line instead of #lines to support Ruby 1.6
       @contents.each_line do |line|
         linenr += 1;
-        line = CGI.escapeHTML(line)
+        line = HTML.escape(line)
         # wrap the line in as many spans as there are links to this line number.
         if @links[linenr]
-          @links[linenr].each do |doc|
-            line = "<span id='#{id(doc)}'>#{line}</span>"
+          @links[linenr].each do |link|
+            line = "<span id='#{id(link[:doc])}'>#{line}</span>"
           end
         end
         lines << line
@@ -68,8 +71,8 @@ module JsDuck
         doc[:name].gsub(/\./, '-')
       else
         # when creation of global class is skipped,
-        # this member property can be nil.
-        (doc[:member] || "global").gsub(/\./, '-') + "-" + doc[:tagname].to_s + "-" + doc[:name]
+        # this owner property can be nil.
+        (doc[:owner] || "global").gsub(/\./, '-') + "-" + doc[:id]
       end
     end
 
@@ -77,10 +80,18 @@ module JsDuck
 
     # Parses the file depending on filename as JS or CSS
     def parse
-      if @filename =~ /\.s?css$/
-        CssParser.new(@contents).parse
-      else
-        JsParser.new(@contents).parse
+      begin
+        if @filename =~ /\.s?css$/
+          CssParser.new(@contents, @options).parse
+        else
+          JsParser.new(@contents, @options).parse
+        end
+      rescue
+        puts "Error while parsing #{@filename}: #{$!}"
+        puts
+        puts "Here's a full backtrace:"
+        puts $!.backtrace
+        exit(1)
       end
     end
 
@@ -89,12 +100,15 @@ module JsDuck
     # Returns the modified doc-object after done.
     def link(linenr, doc)
       @links[linenr] = [] unless @links[linenr]
-      @links[linenr] << doc
-      doc[:filename] = @filename
-      doc[:linenr] = linenr
+      file = {
+        :filename => @filename,
+        :linenr => linenr,
+      }
+      @links[linenr] << {:doc => doc, :file => file}
+      doc[:files] = [file]
       if doc[:tagname] == :class
-        doc[:cfg].each {|cfg| link(linenr, cfg) }
-        doc[:method].each {|method| link(linenr, method) }
+        doc[:members][:cfg].each {|cfg| link(linenr, cfg) }
+        doc[:members][:method].each {|method| link(linenr, method) }
       end
       doc
     end

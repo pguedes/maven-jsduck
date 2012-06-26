@@ -19,7 +19,7 @@ public class CleanJsDuckMojo extends AbstractMojo {
      * The target directory to generate the API documentation in.
      * 
      * @parameter expression="${jsduck.targetDirectory}"
-     *            default-value="src/main/webapp/api"
+     *            default-value="target/jsduck-api"
      */
     private String targetDirectory;
     /**

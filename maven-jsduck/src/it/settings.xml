@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+	<mirrors>
+		<mirror>
+			<mirrorOf>*</mirrorOf>
+			<id>localRepository</id>
+			<url>file:///@localRepository@</url>
+		</mirror>
+	</mirrors>
+</settings>

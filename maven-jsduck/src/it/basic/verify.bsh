@@ -1,0 +1,27 @@
+import java.io.*;
+import org.codehaus.plexus.util.FileUtils;
+
+try
+{
+    File buildDir = new File( basedir, "target" );
+	
+    File bobFile = new File( new File(new File(buildDir, "jsduck-api"), "output"), "Bob.js");
+    if ( !bobFile.isFile()) {
+        System.err.println( bobFile.getAbsolutePath() + " file was not created" );
+        return false;
+    }
+
+    File jimFile = new File( new File(new File(buildDir, "jsduck-api"), "output"), "Jim.js");
+    if ( !jimFile.isFile()) {
+        System.err.println( jimFile.getAbsolutePath() + " file was not created" );
+        return false;
+    }
+}
+catch( Throwable t )
+{
+    t.printStackTrace();
+    return false;
+}
+
+return true;
+
