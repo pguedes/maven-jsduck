@@ -16,6 +16,27 @@ try
         System.err.println( jimFile.getAbsolutePath() + " file was not created" );
         return false;
     }
+    
+    File index = new File(new File(buildDir, "jsduck-api"), "index.html");
+    if ( !index.isFile()) {
+        System.err.println( index.getAbsolutePath() + " file was not created" );
+        return false;
+    }
+    
+    BufferedReader r = new BufferedReader(new FileReader(index));
+    String l = null;
+    boolean flibble = false;
+    while ((l = r.readLine()) != null) {
+    	if (l.indexOf("Flibble") != -1) {
+    		flibble = true;
+    		break;
+    	}
+    }
+    if (!flibble) {
+    	System.err.println("Welcome page not honoured");
+    	return false;
+    }
+    
 }
 catch( Throwable t )
 {
