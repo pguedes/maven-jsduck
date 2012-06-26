@@ -39,13 +39,15 @@ Clean
 Configuration
 -------------
 
-| *parameter*            | *description*                                               | *default*                     |
-|:-----------------------|:------------------------------------------------------------|:------------------------------|
-|  verbose               | Enable or disable more logging.                             |  true                         |
-|  source                | Directories containing the javascript files to document.    |                               |
-|  javascriptDirectory   | The directory containing the JavaScript files to document.  |  src/main/webapp/js           |
-|  targetDirectory       | The directory to write the API documentation to.            |  target/jsduck-api            |
-|  welcome               | The welcome page to use.                                    |  src/main/jsduck/welcome.html |
+| *parameter*            | *description*                                               | *default*                               |
+|:-----------------------|:------------------------------------------------------------|:----------------------------------------|
+|  verbose               | Enable or disable more logging.                             |  true                                   |
+|  source                | Directories containing the javascript files to document.    |                                         |
+|  javascriptDirectory   | The directory containing the JavaScript files to document.  |  src/main/webapp/js                     |
+|  targetDirectory       | The directory to write the API documentation to.            |  target/jsduck-api                      |
+|  welcome               | The welcome page to use.                                    |  src/main/jsduck/welcome.html           |
+|  title                 | The title to use for the documentation.                     |  ${project.name} ${project.version}     |
+|  header                | The header to use for the documentation.                    |  ${project.name} ${project.version} API |
 
 To change the configuration while running command line use the plugin name as prefix: -Djsduck.verbose=false.
 

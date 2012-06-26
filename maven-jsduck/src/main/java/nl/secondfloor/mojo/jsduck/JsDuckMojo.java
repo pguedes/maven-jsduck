@@ -51,7 +51,7 @@ public class JsDuckMojo extends AbstractMojo {
 	/**
 	 * Set to <code>true</code> to print feedback while running.
 	 * 
-	 * @parameter  default-value="true"
+	 * @parameter default-value="true"
 	 */
 	private boolean verbose;
 	
@@ -61,6 +61,20 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @parameter default-value="src/main/jsduck/welcome.html"
 	 */
 	private String welcome;
+	
+	/**
+	 * The title for the documentation
+	 * 
+	 * @parameter default-value="${project.name} ${project.version}" 
+	 */
+	private String title;
+	
+	/**
+	 * The header for the documentation
+	 * 
+	 * @parameter default-value="${project.name} ${project.version} API"
+	 */
+	private String header;
 
 	public void execute() throws MojoExecutionException {
 		getLog().info("Producing JavaScript API documentation using jsduck.");
@@ -157,6 +171,8 @@ public class JsDuckMojo extends AbstractMojo {
 			jruby.put("output_path", targetDirectory);
 			jruby.put("verbose", verbose);
 			jruby.put("welcome_path", welcome);
+			jruby.put("title", title);
+			jruby.put("header", header);
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
