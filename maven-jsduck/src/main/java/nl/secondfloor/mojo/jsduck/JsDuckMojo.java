@@ -42,7 +42,7 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @parameter property="targetDirectory" default-value="target/jsduck-api"
 	 */
 	private String targetDirectory;
-
+	
 	/**
 	 * @parameter default-value="src/main/webapp/js"
 	 */
@@ -59,6 +59,27 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @parameter default-value="true"
 	 */
 	private boolean verbose;
+	
+	/**
+	 * The welcome page for the API documentation
+	 * 
+	 * @parameter default-value="src/main/jsduck/welcome.html"
+	 */
+	private String welcome;
+	
+	/**
+	 * The title for the documentation
+	 * 
+	 * @parameter default-value="${project.name} ${project.version}" 
+	 */
+	private String title;
+	
+	/**
+	 * The header for the documentation
+	 * 
+	 * @parameter default-value="${project.name} ${project.version} API"
+	 */
+	private String header;
 
 	public void execute() throws MojoExecutionException {
 		getLog().info("Producing JavaScript API documentation using jsduck.");
@@ -153,8 +174,11 @@ public class JsDuckMojo extends AbstractMojo {
 			ScriptingContainer jruby = new ScriptingContainer();
 			jruby.put("input_path", getJavascriptDirectories());
 			jruby.put("output_path", targetDirectory);
-			jruby.put("verbose", verbose);			
+			jruby.put("verbose", verbose);
 			jruby.put("guides", guides);
+			jruby.put("welcome_path", welcome);
+			jruby.put("title", title);
+			jruby.put("header", header);
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
@@ -168,15 +192,17 @@ public class JsDuckMojo extends AbstractMojo {
 	 */
 	private String[] getJavascriptDirectories() {
 		Set<String> l = new LinkedHashSet<String>();
-
-		if (javascriptDirectory != null) {
+		
+		if (javascriptDirectory != null)
+		{
 			l.add(javascriptDirectory);
 		}
-
-		if (sources != null) {
+		
+		if (sources != null)
+		{
 			l.addAll(Arrays.asList(sources));
 		}
-
+		
 		return l.toArray(new String[l.size()]);
 	}
 }
