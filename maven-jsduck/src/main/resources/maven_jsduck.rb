@@ -21,11 +21,7 @@ options = JsDuck::Options.new
 options.output_dir = output_path
 options.processes = 0
 options.template_dir = "target/jsduck_template"
-if File.exists?(welcome_path)
-  options.welcome = welcome_path
-end
-options.title = title
-options.header = header
+options.guides = guides 
 
 js_files = []
 # scan directory for .js files
