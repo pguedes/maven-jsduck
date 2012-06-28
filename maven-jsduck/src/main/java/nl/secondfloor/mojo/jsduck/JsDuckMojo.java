@@ -72,7 +72,7 @@ public class JsDuckMojo extends AbstractMojo {
 	 * 
 	 * @parameter default-value="${project.name} ${project.version}" 
 	 */
-	private String title;
+	private String title;	
 	
 	/**
 	 * The header for the documentation
@@ -178,7 +178,7 @@ public class JsDuckMojo extends AbstractMojo {
 			jruby.put("guides", guides);
 			jruby.put("welcome_path", welcome);
 			jruby.put("title", title);
-			jruby.put("header", header);
+			jruby.put("header", header);	
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
@@ -193,16 +193,15 @@ public class JsDuckMojo extends AbstractMojo {
 	private String[] getJavascriptDirectories() {
 		Set<String> l = new LinkedHashSet<String>();
 		
-		if (javascriptDirectory != null)
-		{
-			l.add(javascriptDirectory);
-		}
-		
 		if (sources != null)
 		{
 			l.addAll(Arrays.asList(sources));
 		}
-		
+		else if (javascriptDirectory != null)
+		{
+			l.add(javascriptDirectory);
+		}
+				
 		return l.toArray(new String[l.size()]);
 	}
 }
