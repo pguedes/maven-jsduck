@@ -551,9 +551,9 @@ pre, code, kbd, samp, tt { font-family: "Menlo", "Courier New", "Courier", monos
 /* line 17, /cygdrive/c/BUILDS/Projects/BuildCtlScmPlugin/maven.1340209909189/maven-jsduck/src/main/resources/template/resources/sass/_categories.scss */
 .class-categories .section { -webkit-border-radius: 5px; -moz-border-radius: 5px; -ms-border-radius: 5px; -o-border-radius: 5px; border-radius: 5px; background-color: #f7f7f7; border: 1px solid #ebebeb; padding: 20px 10px 20px 20px; margin: 0 10px 20px 0; clear: both; }
 /* line 25, /cygdrive/c/BUILDS/Projects/BuildCtlScmPlugin/maven.1340209909189/maven-jsduck/src/main/resources/template/resources/sass/_categories.scss */
-.class-categories .section .left-column { float: left; width: 250px; margin-left: 20px; }
+.class-categories .section .left-column { float: left;  margin-left: 20px; margin-right: 20px;}
 /* line 29, /cygdrive/c/BUILDS/Projects/BuildCtlScmPlugin/maven.1340209909189/maven-jsduck/src/main/resources/template/resources/sass/_categories.scss */
-.class-categories .section .middle-column { float: left; width: 280px; }
+.class-categories .section .middle-column { float: left; margin-right: 20px; }
 /* line 32, /cygdrive/c/BUILDS/Projects/BuildCtlScmPlugin/maven.1340209909189/maven-jsduck/src/main/resources/template/resources/sass/_categories.scss */
 .class-categories .section .right-column { float: left; }
 /* line 35, /cygdrive/c/BUILDS/Projects/BuildCtlScmPlugin/maven.1340209909189/maven-jsduck/src/main/resources/template/resources/sass/_categories.scss */
