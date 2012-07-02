@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -68,6 +69,14 @@ public class JsDuckMojo extends AbstractMojo {
 	private String welcome;
 	
 	/**
+	 * The directory for any resources used by the welcome page.
+	 * This is relative to the welcome page itself.
+	 * 
+	 * @parameter default-value="resources"
+	 */
+	private String welcomeResources;
+	
+	/**
 	 * The title for the documentation
 	 * 
 	 * @parameter default-value="${project.name} ${project.version}" 
@@ -102,8 +111,10 @@ public class JsDuckMojo extends AbstractMojo {
 		if (!new File(targetDirectory).exists()) {
 			new File(targetDirectory).mkdirs();
 		}
-
+		
 		runJsDuck();
+		
+		copyResources();
 	}
 
 	/**
@@ -134,6 +145,62 @@ public class JsDuckMojo extends AbstractMojo {
 			throw new MojoExecutionException(
 					"Failed to populate template directory.", e);
 		}
+	}
+	
+	/**
+	 * copy the resource for the welcome page into the target directory.
+	 * 
+	 * @throws MojoExecutionException
+	 */
+	private void copyResources() throws MojoExecutionException
+	{
+		File srcResDir = new File(new File(welcome).getParentFile(),  welcomeResources);
+		
+		if(!srcResDir.exists())
+		{
+			getLog().info(
+					String.format("No resources to copy from: %s.", 
+							new File(welcomeResources).getAbsolutePath()));
+			
+			return;
+		}
+				
+		File targetResDir = new File(targetDirectory);
+		
+		if(!targetResDir.exists())
+		{
+			targetResDir.mkdirs();
+		}
+		
+		try 
+		{
+			copyResources(srcResDir, targetResDir);
+		} 
+		catch (IOException e) 
+		{
+			throw new MojoExecutionException(
+					"Failed to copy welcome resources directory.", e);
+		}
+	}
+	
+	/**
+	 * copy files from one directory to another.
+	 * @param srcDir
+	 * @param parentTargetDir
+	 * @throws IOException
+	 */
+	private void copyResources(File srcDir, File parentTargetDir) throws IOException
+	{
+		File targetDir = new File(parentTargetDir, srcDir.getName());
+		targetDir.mkdirs();
+		
+		if(verbose)
+		{
+			getLog().info(String.format("Copying resources: %s to %s.", 
+						srcDir.getAbsolutePath(), targetDir.getAbsolutePath()));
+		}
+		
+		FileUtils.copyDirectory(srcDir, targetDir);
 	}
 
 	/**
