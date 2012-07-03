@@ -40,8 +40,12 @@ js_files = []
     else
       puts "Warning: File #{d} not found"
     end
-  end
+  end  
 options.input_files = js_files
+
+if(builtin_classes)
+	options.read_filenames("target/js-classes")
+end
 
 app = JsDuck::App.new(options)
 app.run()

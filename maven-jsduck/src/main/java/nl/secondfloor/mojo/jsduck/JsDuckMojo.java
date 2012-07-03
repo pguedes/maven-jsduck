@@ -89,6 +89,13 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @parameter default-value="${project.name} ${project.version} API"
 	 */
 	private String header;
+	
+	/**
+	 * Whether to document built in classes (Array, object etc)
+	 * 
+	 * @parameter default-value="false"
+	 */
+	private boolean builtinClasses;
 
 	public void execute() throws MojoExecutionException {
 		getLog().info("Producing JavaScript API documentation using jsduck.");
@@ -108,6 +115,13 @@ public class JsDuckMojo extends AbstractMojo {
 			prepareTemplates(templateDir);
 		}
 
+		if(builtinClasses){
+			File jsClasses = new File("target/js-classes");
+			if (!jsClasses.exists()) {
+				prepareBuiltinClasses(jsClasses);
+			}
+		}
+		
 		if (!new File(targetDirectory).exists()) {
 			new File(targetDirectory).mkdirs();
 		}
@@ -137,13 +151,39 @@ public class JsDuckMojo extends AbstractMojo {
 								templateUri, templateDir.getAbsolutePath()));
 			}
 
-			copyTemplates(templateUri, templateDir);
+			copyDirectories(templateUri, templateDir);
 		} catch (URISyntaxException e) {
 			throw new MojoExecutionException(
 					"Failed to prepare template directory.", e);
 		} catch (IOException e) {
 			throw new MojoExecutionException(
 					"Failed to populate template directory.", e);
+		}
+	}
+	
+	/**
+	 * Prepare jsclasses directory used by jsduck to document the builtin classes
+	 * 
+	 * @param jsClasses The target directoy.
+	 * @throws MojoExecutionException
+	 */
+	private void prepareBuiltinClasses(File jsClasses)
+			throws MojoExecutionException {
+		jsClasses.mkdirs();
+		try {
+			URI jsUri = this.getClass().getClassLoader().getResource("js-classes").toURI();
+			if (verbose) {
+				getLog().info(
+						String.format("Copying js-classes from %s to %s.", jsUri, jsClasses.getAbsolutePath()));
+			}
+
+			copyDirectories(jsUri, jsClasses);
+		} catch (URISyntaxException e) {
+			throw new MojoExecutionException(
+					"Failed to prepare js-classes directory.", e);
+		} catch (IOException e) {
+			throw new MojoExecutionException(
+					"Failed to populate js-classes directory.", e);
 		}
 	}
 	
@@ -213,7 +253,7 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @throws IOException
 	 * @throws FsSyncException
 	 */
-	private void copyTemplates(URI from, File to) throws IOException,
+	private void copyDirectories(URI from, File to) throws IOException,
 			FsSyncException {
 		TFile tFile = new TFile(from);
 		try {
@@ -246,6 +286,7 @@ public class JsDuckMojo extends AbstractMojo {
 			jruby.put("welcome_path", welcome);
 			jruby.put("title", title);
 			jruby.put("header", header);	
+			jruby.put("builtin_classes", builtinClasses);	
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
