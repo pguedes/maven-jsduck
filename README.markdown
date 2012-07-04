@@ -1,10 +1,10 @@
 Introduction
 ------------
 
-maven-jsduck is a maven plugin that produces javascript API documentation using [jsduck](http://rubygems.org/gems/jsduck).
+maven-jsduck is a Maven plugin that produces JavaScript API documentation using [jsduck](http://rubygems.org/gems/jsduck).
 
-It utilizes [JRuby](http://www.jruby.org/) to run; the lib directories of [jsduck](http://rubygems.org/gems/jsduck)
-version 0.6 and it's dependencies are unrolled in src/main/resources.
+It uses [JRuby](http://www.jruby.org/) to run; the lib directories of [jsduck](http://rubygems.org/gems/jsduck)
+version 3.10.5 and its dependencies are unrolled in src/main/resources.
 
 The [Markdown](http://daringfireball.net/projects/markdown/) implementation used by [jsduck](http://rubygems.org/gems/jsduck)
 is [RDiscount](http://rubygems.org/gems/rdiscount) which is written in C; this was replaced by a native java implementation
@@ -39,13 +39,18 @@ Clean
 Configuration
 -------------
 
-| *parameter*            | *description*                                             | *default*             |
-|:-----------------------|:----------------------------------------------------------|:----------------------|
-|  verbose               | Enable or disable more logging.                           |  true                 |
-|  javascriptDirectory   | The directory containing the javascript files to document.|  src/main/webapp/js   |
-|  targetDirectory       | The directory to write the API documentation to.          |  src/main/webapp/api  |
+| *parameter*            | *description*                                               | *default*                               |
+|:-----------------------|:------------------------------------------------------------|:----------------------------------------|
+|  verbose               | Enable or disable more logging.                             |  true                                   |
+|  source                | Directories containing the javascript files to document.    |                                         |
+|  javascriptDirectory   | The directory containing the JavaScript files to document.  |  src/main/webapp/js                     |
+|  targetDirectory       | The directory to write the API documentation to.            |  target/jsduck-api                      |
+|  welcome               | The welcome page to use.                                    |  src/main/jsduck/welcome.html           |
+|  title                 | The title to use for the documentation.                     |  ${project.name} ${project.version}     |
+|  header                | The header to use for the documentation.                    |  ${project.name} ${project.version} API |
+|  guides                | The guides to include                                       |                                         |
 
-To change the configuration while running commandline use the plugin name as prefix: -Djsduck.verbose=false.
+To change the configuration while running command line use the plugin name as prefix: -Djsduck.verbose=false.
 
 Maven
 -----
@@ -81,4 +86,3 @@ Wishlist
 * Investigate if it is possible to do delta generation to sync the API doc with the current state instead of having to clean and regenerate
 * Wrap jsduck logging in the maven plugin's log framework
 * Allow usage of customized templates.
-* Accept multiple directories for javascriptDirectory.

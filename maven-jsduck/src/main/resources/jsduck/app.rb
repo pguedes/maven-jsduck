@@ -1,82 +1,110 @@
 require 'rubygems'
 require 'jsduck/aggregator'
 require 'jsduck/source_file'
-require 'jsduck/source_writer'
+require 'jsduck/doc_formatter'
+require 'jsduck/class_formatter'
 require 'jsduck/class'
-require 'jsduck/tree'
-require 'jsduck/tree_icons'
-require 'jsduck/members'
 require 'jsduck/relations'
-require 'jsduck/page'
-require 'jsduck/exporter'
-require 'jsduck/timer'
+require 'jsduck/inherit_doc'
 require 'jsduck/parallel_wrap'
-require 'json'
+require 'jsduck/logger'
+require 'jsduck/assets'
+require 'jsduck/json_duck'
+require 'jsduck/io'
+require 'jsduck/lint'
+require 'jsduck/template_dir'
+require 'jsduck/class_writer'
+require 'jsduck/source_writer'
+require 'jsduck/app_data'
+require 'jsduck/index_html'
+require 'jsduck/api_exporter'
+require 'jsduck/full_exporter'
+require 'jsduck/app_exporter'
+require 'jsduck/examples_exporter'
+require 'jsduck/inline_examples'
+require 'jsduck/guide_writer'
+require 'jsduck/stdout'
 require 'fileutils'
 
 module JsDuck
 
   # The main application logic of jsduck
   class App
-    # These are basically input parameters for app
-    attr_accessor :output_dir
-    attr_accessor :template_dir
-    attr_accessor :input_files
-    attr_accessor :verbose
-    attr_accessor :export
-    attr_accessor :link_tpl
-    attr_accessor :img_tpl
-    attr_accessor :ignore_global
-
-    def initialize
-      @output_dir = nil
-      @template_dir = nil
-      @input_files = []
-      @verbose = false
-      @export = nil
-      @link_tpl = nil
-      @img_tpl = nil
-      @ignore_global = false
-      @timer = Timer.new
-      @parallel = ParallelWrap.new
-    end
-
-    # Sets the nr of parallel processes to use.
-    # Set to 0 to disable parallelization completely.
-    def processes=(count)
-      @parallel = ParallelWrap.new(:in_processes => count)
+    # Initializes app with JsDuck::Options object
+    def initialize(opts)
+      @opts = opts
+      # Sets the nr of parallel processes to use.
+      # Set to 0 to disable parallelization completely.
+      @parallel = ParallelWrap.new(:in_processes => @opts.processes)
+      # Turn JSON pretty-printing on/off
+      JsonDuck.pretty = @opts.pretty_json
     end
 
     # Call this after input parameters set
     def run
-      parsed_files = @timer.time(:parsing) { parallel_parse(@input_files) }
-      result = @timer.time(:aggregating) { aggregate(parsed_files) }
-      relations = @timer.time(:aggregating) { filter_classes(result) }
-      warn_globals(relations)
-      warn_unnamed(relations)
+      parsed_files = parallel_parse(@opts.input_files)
+      result = aggregate(parsed_files)
+      @relations = filter_classes(result)
+      InheritDoc.new(@relations).resolve_all
+      Lint.new(@relations).run
 
-      clear_dir(@output_dir)
-      if @export == :json
-        FileUtils.mkdir(@output_dir)
-        init_output_dirs(@output_dir)
-        @timer.time(:generating) { write_src(@output_dir+"/source", parsed_files) }
-        @timer.time(:generating) { write_json(@output_dir+"/output", relations) }
+      # Initialize guides, videos, examples, ...
+      @assets = Assets.new(@relations, @opts)
+
+      # Give access to assets from all meta-tags
+      MetaTagRegistry.instance.assets = @assets
+
+      if @opts.export
+        format_classes
+        FileUtils.rm_rf(@opts.output_dir) unless @opts.output_dir == :stdout
+        exporters = {
+          :full => FullExporter,
+          :api => ApiExporter,
+          :examples => ExamplesExporter,
+        }
+        cw = ClassWriter.new(exporters[@opts.export], @relations, @opts)
+        cw.write(@opts.output_dir, ".json")
+        if @opts.export == :examples
+          gw = GuideWriter.new(exporters[@opts.export], @assets.guides, @opts)
+          gw.write(@opts.output_dir, ".json")
+        end
+        Stdout.instance.flush
       else
-        copy_template(@template_dir, @output_dir)
-        @timer.time(:generating) { write_src(@output_dir+"/source", parsed_files) }
-        @timer.time(:generating) { write_tree(@output_dir+"/output/tree.js", relations) }
-        @timer.time(:generating) { write_members(@output_dir+"/output/members.js", relations) }
-        @timer.time(:generating) { write_pages(@output_dir+"/output", relations) }
-      end
+        FileUtils.rm_rf(@opts.output_dir)
+        TemplateDir.new(@opts).write
 
-      @timer.report if @verbose
+        IndexHtml.new(@assets, @opts).write
+
+        AppData.new(@relations, @assets, @opts).write(@opts.output_dir+"/data.js")
+
+        # class-formatting is done in parallel which breaks the links
+        # between source files and classes. Therefore it MUST to be done
+        # after writing sources which needs the links to work.
+        if @opts.source
+          source_writer = SourceWriter.new(parsed_files, @parallel)
+          source_writer.write(@opts.output_dir + "/source")
+        end
+        format_classes
+
+        if @opts.tests
+          examples = InlineExamples.new
+          examples.add_classes(@relations)
+          examples.add_guides(@assets.guides)
+          examples.write(@opts.output_dir+"/inline-examples.js")
+        end
+
+        cw = ClassWriter.new(AppExporter, @relations, @opts)
+        cw.write(@opts.output_dir+"/output", ".js")
+
+        @assets.write
+      end
     end
 
     # Parses the files in parallel using as many processes as available CPU-s
     def parallel_parse(filenames)
       @parallel.map(filenames) do |fname|
-        puts "Parsing #{fname} ..." if @verbose
-        SourceFile.new(IO.read(fname), fname)
+        Logger.instance.log("Parsing", fname)
+        SourceFile.new(JsDuck::IO.read(fname), fname, @opts)
       end
     end
 
@@ -84,137 +112,65 @@ module JsDuck
     def aggregate(parsed_files)
       agr = Aggregator.new
       parsed_files.each do |file|
-        puts "Aggregating #{file.filename} ..." if @verbose
+        Logger.instance.log("Aggregating", file.filename)
         agr.aggregate(file)
       end
       agr.classify_orphans
-      agr.create_global_class unless @ignore_global
+      agr.create_global_class
+      agr.remove_ignored_classes
+      agr.create_accessors
+      agr.append_ext4_event_options
       agr.result
     end
 
-    # Filters out class-documentations, converting them to Class objects.
-    # For each other type, prints a warning message and discards it
+    # Turns all aggregated data into Class objects.
+    # Depending on --ignore-global either keeps or discards the global class.
+    # Warnings for global members are printed regardless of that setting,
+    # but of course can be turned off using --warnings=-global
     def filter_classes(docs)
       classes = []
       docs.each do |d|
-        if d[:tagname] == :class
-          classes << Class.new(d)
+        cls = Class.new(d)
+        if d[:name] != "global"
+          classes << cls
         else
-          type = d[:tagname].to_s
-          name = d[:name]
-          file = d[:filename]
-          line = d[:linenr]
-          puts "Warning: Ignoring #{type}: #{name} in #{file} line #{line}"
-        end
-      end
-      Relations.new(classes)
-    end
+          # add global class only if --ignore-global not specified
+          classes << cls unless @opts.ignore_global
 
-    # print warning for each global member
-    def warn_globals(relations)
-      global = relations["global"]
-      return unless global
-      [:cfg, :property, :method, :event].each do |type|
-        global.members(type).each do |member|
-          name = member[:name]
-          file = member[:filename]
-          line = member[:linenr]
-          puts "Warning: Global #{type}: #{name} in #{file} line #{line}"
-        end
-      end
-    end
-
-    # print warning for each member with no name
-    def warn_unnamed(relations)
-      relations.each do |cls|
-        [:cfg, :property, :method, :event].each do |type|
-          cls[type].each do |member|
-            if !member[:name] || member[:name] == ""
-              file = member[:filename]
-              line = member[:linenr]
-              puts "Warning: Unnamed #{type} in #{file} line #{line}"
-            end
+          # Print warning for each global member
+          cls.all_local_members.each do |m|
+            type = m[:tagname].to_s
+            name = m[:name]
+            file = m[:files][0]
+            Logger.instance.warn(:global, "Global #{type}: #{name}", file[:filename], file[:linenr])
           end
         end
       end
+      Relations.new(classes, @opts.external_classes)
     end
 
-    # Given all classes, generates namespace tree and writes it
-    # in JSON form into a file.
-    def write_tree(filename, relations)
-      tree = Tree.new.create(relations.classes)
-      icons = TreeIcons.new.extract_icons(tree)
-      js = "Docs.classData = " + JSON.generate( tree ) + ";"
-      js += "Docs.icons = " + JSON.generate( icons ) + ";"
-      File.open(filename, 'w') {|f| f.write(js) }
-    end
-
-    # Given all classes, generates members data for search and writes in
-    # in JSON form into a file.
-    def write_members(filename, relations)
-      members = Members.new.create(relations.classes)
-      js = "Docs.membersData = " + JSON.generate( {:data => members} ) + ";"
-      File.open(filename, 'w') {|f| f.write(js) }
-    end
-
-    # Writes documentation page for each class
-    # We do it in parallel using as many processes as available CPU-s
-    def write_pages(path, relations)
-      cache = {}
-      @parallel.each(relations.classes) do |cls|
-        filename = path + "/" + cls[:name] + ".html"
-        puts "Writing to #{filename} ..." if @verbose
-        page = Page.new(cls, relations, cache)
-        page.link_tpl = @link_tpl if @link_tpl
-        page.img_tpl = @img_tpl if @img_tpl
-        File.open(filename, 'w') {|f| f.write(page.to_html) }
+    # Formats each class
+    def format_classes
+      doc_formatter = DocFormatter.new(@relations, @opts)
+      doc_formatter.img_path = "images"
+      class_formatter = ClassFormatter.new(@relations, doc_formatter)
+      # Don't format types when exporting
+      class_formatter.include_types = !@opts.export
+      # Format all doc-objects in parallel
+      formatted_classes = @parallel.map(@relations.classes) do |cls|
+        Logger.instance.log("Markdown formatting #{cls[:name]}")
+        {
+          :doc => class_formatter.format(cls.internal_doc),
+          :images => doc_formatter.images
+        }
+      end
+      # Then merge the data back to classes sequentially
+      formatted_classes.each do |cls|
+        @relations[cls[:doc][:name]].internal_doc = cls[:doc]
+        cls[:images].each {|img| @assets.images.add(img) }
       end
     end
 
-    # Writes JSON export file for each class
-    def write_json(path, relations)
-      formatter = DocFormatter.new
-      formatter.link_tpl = @link_tpl if @link_tpl
-      formatter.img_tpl = @img_tpl if @img_tpl
-      formatter.relations = relations
-      exporter = Exporter.new(relations, formatter)
-      @parallel.each(relations.classes) do |cls|
-        filename = path + "/" + cls[:name] + ".json"
-        puts "Writing to #{filename} ..." if @verbose
-        hash = exporter.export(cls)
-        json = JSON.pretty_generate(hash)
-        File.open(filename, 'w') {|f| f.write(json) }
-      end
-    end
-
-    # Writes formatted HTML source code for each input file
-    def write_src(path, parsed_files)
-      src = SourceWriter.new(path, @export ? nil : :page)
-      # Can't be done in parallel, because file.html_filename= method
-      # updates all the doc-objects related to the file
-      parsed_files.each do |file|
-        html_filename = src.write(file.to_html, file.filename)
-        puts "Writing to #{html_filename} ..." if @verbose
-        file.html_filename = File.basename(html_filename)
-      end
-    end
-
-    def copy_template(template_dir, dir)
-      puts "Copying template files to #{dir}..." if @verbose
-      FileUtils.cp_r(template_dir, dir)
-      init_output_dirs(dir)
-    end
-
-    def clear_dir(dir)
-      if File.exists?(dir)
-        FileUtils.rm_r(dir)
-      end
-    end
-
-    def init_output_dirs(dir)
-      FileUtils.mkdir(dir + "/output")
-      FileUtils.mkdir(dir + "/source")
-    end
   end
 
 end

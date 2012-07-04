@@ -1,3 +1,7 @@
+require 'jsduck/class'
+require 'jsduck/accessors'
+require 'jsduck/logger'
+
 module JsDuck
 
   # Combines JavaScript Parser, DocParser and Merger.
@@ -6,6 +10,7 @@ module JsDuck
     def initialize
       @documentation = []
       @classes = {}
+      @alt_names = {}
       @orphans = []
       @current_class = nil
     end
@@ -35,6 +40,11 @@ module JsDuck
     # Otherwise add as new class.
     def add_class(cls)
       old_cls = @classes[cls[:name]]
+      if !old_cls && @alt_names[cls[:name]]
+        old_cls = @alt_names[cls[:name]]
+        warn_alt_name(cls)
+      end
+
       if old_cls
         merge_classes(old_cls, cls)
         @current_class = old_cls
@@ -42,20 +52,60 @@ module JsDuck
         @current_class = cls
         @documentation << cls
         @classes[cls[:name]] = cls
+
+        # Register all alternate names of class for lookup too
+        cls[:alternateClassNames].each do |altname|
+          if cls[:name] == altname
+            # A buggy documentation, warn.
+            warn_alt_name(cls)
+          else
+            @alt_names[altname] = cls
+            # When an alternate name has been used as a class name before,
+            # then this is one crappy documentation, but attempt to handle
+            # it by merging the class with alt-name into this class.
+            if @classes[altname]
+              merge_classes(cls, @classes[altname])
+              @documentation.delete(@classes[altname])
+              @classes.delete(altname)
+              warn_alt_name(cls)
+            end
+          end
+        end
+
         insert_orphans(cls)
       end
     end
 
+    def warn_alt_name(cls)
+      file = cls[:files][0][:filename]
+      line = cls[:files][0][:linenr]
+      Logger.instance.warn(:alt_name, "Name #{cls[:name]} used as both classname and alternate classname", file, line)
+    end
+
     # Merges new class-doc into old one.
     def merge_classes(old, new)
-      [:extends, :xtype, :singleton, :private].each do |tag|
+      # Merge booleans
+      [:extends, :singleton, :private].each do |tag|
         old[tag] = old[tag] || new[tag]
       end
-      [:mixins, :alternateClassNames].each do |tag|
+      # Merge arrays
+      [:mixins, :alternateClassNames, :files].each do |tag|
         old[tag] = old[tag] + new[tag]
       end
+      # Merge meta hashes
+      new[:meta].each_pair do |name, value|
+        old[:meta][name] = old[:meta][name] || value
+      end
+      # Merge hashes of arrays
+      [:aliases].each do |tag|
+        new[tag].each_pair do |key, contents|
+          old[tag][key] = (old[tag][key] || []) + contents
+        end
+      end
       old[:doc] = old[:doc].length > 0 ? old[:doc] : new[:doc]
-      old[:cfg] = old[:cfg] + new[:cfg]
+      # Additionally the doc-comment can contain configs and constructor
+      old[:members][:cfg] += new[:members][:cfg]
+      old[:members][:method] += new[:members][:method]
     end
 
     # Tries to place members into classes where they belong.
@@ -68,18 +118,25 @@ module JsDuck
     # Items without @member belong by default to the preceding class.
     # When no class precedes them - they too are orphaned.
     def add_member(node)
-      if node[:member]
-        if @classes[node[:member]]
-          @classes[node[:member]][node[:tagname]] << node
+      # Completely ignore member if @ignore used
+      return if node[:meta][:ignore]
+
+      if node[:owner]
+        if @classes[node[:owner]]
+          add_to_class(@classes[node[:owner]], node)
         else
           add_orphan(node)
         end
       elsif @current_class
-        node[:member] = @current_class[:name]
-        @current_class[ node[:tagname] ] << node
+        node[:owner] = @current_class[:name]
+        add_to_class(@current_class, node)
       else
         add_orphan(node)
       end
+    end
+
+    def add_to_class(cls, member)
+      cls[member[:meta][:static] ? :statics : :members][member[:tagname]] << member
     end
 
     def add_orphan(node)
@@ -88,24 +145,23 @@ module JsDuck
 
     # Inserts available orphans to class
     def insert_orphans(cls)
-      members = @orphans.find_all {|node| node[:member] == cls[:name] }
+      members = @orphans.find_all {|node| node[:owner] == cls[:name] }
       members.each do |node|
-        cls[node[:tagname]] << node
+        add_to_class(cls, node)
         @orphans.delete(node)
       end
     end
 
-    # Creates classes for orphans that have :member property defined,
+    # Creates classes for orphans that have :owner property defined,
     # and then inserts orphans to these classes.
     def classify_orphans
       @orphans.each do |orph|
-        if orph[:member]
-          class_name = orph[:member]
+        if orph[:owner]
+          class_name = orph[:owner]
           if !@classes[class_name]
+            # this will add the class and add all orphans to it
             add_empty_class(class_name)
           end
-          add_member(orph)
-          @orphans.delete(orph)
         end
       end
     end
@@ -117,7 +173,7 @@ module JsDuck
 
       add_empty_class("global", "Global variables and functions.")
       @orphans.each do |orph|
-        orph[:member] = "global"
+        orph[:owner] = "global"
         add_member(orph)
       end
       @orphans = []
@@ -130,16 +186,52 @@ module JsDuck
         :doc => doc,
         :mixins => [],
         :alternateClassNames => [],
-        :cfg => [],
-        :property => [],
-        :method => [],
-        :event => [],
-        :css_var => [],
-        :css_mixin => [],
-        :filename => "",
-        :html_filename => "",
-        :linenr => 0,
+        :members => Class.default_members_hash,
+        :statics => Class.default_members_hash,
+        :aliases => {},
+        :meta => {},
+        :files => [{:filename => "", :linenr => 0, :href => ""}],
       })
+    end
+
+    # Gets rid of classes marked with @ignore
+    def remove_ignored_classes
+      @documentation.delete_if do |cls|
+        if cls[:meta][:ignore]
+          @classes.delete(cls["name"])
+          true
+        end
+      end
+    end
+
+    # Appends Ext4 options parameter to each event parameter list.
+    # But only when we are dealing with Ext4 codebase.
+    def append_ext4_event_options
+      return unless ext4?
+
+      options = {
+        :tagname => :param,
+        :name => "eOpts",
+        :type => "Object",
+        :doc => "The options object passed to {@link Ext.util.Observable#addListener}."
+      }
+      @classes.each_value do |cls|
+        cls[:members][:event].each {|e| e[:params] << options }
+      end
+    end
+
+    # Creates accessor method for configs marked with @accessor
+    def create_accessors
+      accessors = Accessors.new
+      @classes.each_value do |cls|
+        accessors.create(cls)
+      end
+    end
+
+    # Are we dealing with ExtJS 4?
+    # True if any of the classes is defined with Ext.define()
+    def ext4?
+      @documentation.any? {|cls| cls[:code_type] == :ext_define }
     end
 
     def result

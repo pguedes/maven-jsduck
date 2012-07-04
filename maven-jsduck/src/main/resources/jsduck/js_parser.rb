@@ -1,13 +1,16 @@
 require 'jsduck/lexer'
 require 'jsduck/doc_parser'
+require 'jsduck/js_literal_parser'
+require 'jsduck/js_literal_builder'
 
 module JsDuck
 
-  class JsParser
-    def initialize(input)
-      @lex = Lexer.new(input)
+  class JsParser < JsLiteralParser
+    def initialize(input, options = {})
+      super(input)
       @doc_parser = DocParser.new
       @docs = []
+      @ext_namespaces = options[:ext_namespaces] || ["Ext"]
     end
 
     # Parses the whole JavaScript block and returns array where for
@@ -70,21 +73,23 @@ module JsDuck
     # <code-block> := <function> | <var-declaration> | <ext-define> |
     #                 <assignment> | <property-literal>
     def code_block
-      if look("function")
+      if look(:function)
         function
-      elsif look("var")
+      elsif look(:var)
         var_declaration
-      elsif look("Ext", ".", "define", "(", :string)
+      elsif ext_look(:ns, ".", "define", "(", :string)
+        ext_define
+      elsif ext_look(:ns, ".", "ClassManager", ".", "create", "(", :string)
         ext_define
       elsif look(:ident, ":") || look(:string, ":")
         property_literal
       elsif look(",", :ident, ":") || look(",", :string, ":")
         match(",")
         property_literal
-      elsif look(:ident) || look("this")
+      elsif look(:ident) || look(:this)
         maybe_assignment
       elsif look(:string)
-        {:type => :assignment, :left => [match(:string)]}
+        {:type => :assignment, :left => [match(:string)[:value]]}
       else
         {:type => :nop}
       end
@@ -92,21 +97,31 @@ module JsDuck
 
     # <function> := "function" [ <ident> ] <function-parameters> <function-body>
     def function
-      match("function")
+      match(:function)
       return {
         :type => :function,
-        :name => look(:ident) ? match(:ident) : nil,
+        :name => look(:ident) ? match(:ident)[:value] : "",
         :params => function_parameters,
         :body => function_body,
+      }
+    end
+
+    # <ext-emptyfn> := "Ext" "." "emptyFn"
+    def ext_emptyfn
+      match(:ident, ".", "emptyFn")
+      return {
+        :type => :function,
+        :name => "",
+        :params => [],
       }
     end
 
     # <function-parameters> := "(" [ <ident> [ "," <ident> ]* ] ")"
     def function_parameters
       match("(")
-      params = look(:ident) ? [{:name => match(:ident)}] : []
+      params = look(:ident) ? [{:name => match(:ident)[:value]}] : []
       while look(",", :ident) do
-        params << {:name => match(",", :ident)}
+        params << {:name => match(",", :ident)[:value]}
       end
       match(")")
       return params
@@ -119,17 +134,26 @@ module JsDuck
 
     # <var-declaration> := "var" <assignment>
     def var_declaration
-      match("var")
+      match(:var)
       maybe_assignment
     end
 
-    # <maybe-assignment> := <ident-chain> [ "=" <expression> ]
+    # <maybe-assignment> := <ident-chain> ( "=" <expression> | ";" | "," )
     def maybe_assignment
       left = ident_chain
       if look("=")
         match("=")
         right = expression
+      elsif look(";")
+        match(";")
+        right = nil
+      elsif look(",")
+        match(",")
+        right = nil
+      else
+        return {:type => :nop}
       end
+
       return {
         :type => :assignment,
         :left => left,
@@ -139,48 +163,91 @@ module JsDuck
 
     # <ident-chain> := [ "this" | <ident> ]  [ "." <ident> ]*
     def ident_chain
-      if look("this")
-        chain = [match("this")]
+      if look(:this)
+        match(:this)
+        chain = ["this"]
       else
-        chain = [match(:ident)]
+        chain = [match(:ident)[:value]]
       end
 
       while look(".", :ident) do
-        chain << match(".", :ident)
+        chain << match(".", :ident)[:value]
       end
       return chain
     end
 
-    # <expression> := <function> | <ext-extend> | <literal>
-    # <literal> := <string> | <boolean> | <number> | <regex>
+    # <expression> := <function> | <ext-extend> | <ext-emptyfn> | <ext-base-css-prefix> | <literal>
     def expression
-      if look("function")
+      if look(:function)
         function
-      elsif look("Ext", ".", "extend")
+      elsif ext_look(:ns, ".", "extend")
         ext_extend
-      elsif look(:string)
-        {:type => :literal, :class => "String"}
-      elsif look("true") || look("false")
-        {:type => :literal, :class => "Boolean"}
-      elsif look(:number)
-        {:type => :literal, :class => "Number"}
-      elsif look(:regex)
-        {:type => :literal, :class => "RegExp"}
+      elsif ext_look(:ns, ".", "emptyFn")
+        ext_emptyfn
+      elsif ext_look(:ns, ".", "baseCSSPrefix", "+", :string)
+        ext_base_css_prefix
+      else
+        my_literal
       end
+    end
+
+    # <literal> := ...see JsLiteralParser...
+    def my_literal
+      lit = literal
+      return unless lit && literal_expression_end?
+
+      cls_map = {
+        :string => "String",
+        :number => "Number",
+        :regex => "RegExp",
+        :array => "Array",
+        :object => "Object",
+      }
+
+      if cls_map[lit[:type]]
+        cls = cls_map[lit[:type]]
+      elsif lit[:type] == :ident && (lit[:value] == "true" || lit[:value] == "false")
+        cls = "Boolean"
+      else
+        cls = nil
+      end
+
+      value = JsLiteralBuilder.new.to_s(lit)
+
+      {:type => :literal, :class => cls, :value => value}
+    end
+
+    # True when we're at the end of literal expression.
+    # ",", ";" and "}" are the normal closing symbols, but for
+    # our docs purposes doc-comment and file end work too.
+    def literal_expression_end?
+      look(",") || look(";") || look("}") || look(:doc_comment) || @lex.empty?
     end
 
     # <ext-extend> := "Ext" "." "extend" "(" <ident-chain> "," ...
     def ext_extend
-      match("Ext", ".", "extend", "(")
+      match(:ident, ".", "extend", "(")
       return {
         :type => :ext_extend,
         :extend => ident_chain,
       }
     end
 
-    # <ext-define> := "Ext" "." "define" "(" <string> "," <ext-define-cfg>
+    # <ext-base-css-prefix> := "Ext" "." "baseCSSPrefix" "+" <string>
+    def ext_base_css_prefix
+      match(:ident, ".", "baseCSSPrefix", "+")
+      return {
+        :type => :literal,
+        :class => "String",
+        :value => '"x-' + match(:string)[:value] + '"',
+      }
+    end
+
+    # <ext-define> := "Ext" "." ["define" | "ClassManager" "." "create" ] "(" <string> "," <ext-define-cfg>
     def ext_define
-      name = match("Ext", ".", "define", "(", :string)
+      match(:ident, ".");
+      look("define") ? match("define") : match("ClassManager", ".", "create");
+      name = match("(", :string)[:value]
 
       if look(",", "{")
         match(",")
@@ -195,89 +262,131 @@ module JsDuck
       cfg
     end
 
-    # <ext-define-cfg> := "{" ( <extend> | <mixins> | <alternate-class-name> | <?> )*
+    # <ext-define-cfg> := "{" ( <extend> | <mixins> | <alternate-class-name> | <alias> |
+    #                           <xtype> | <requires> | <uses> | <singleton> | <?> )*
     def ext_define_cfg
       match("{")
       cfg = {}
       found = true
       while found
         found = false
-        if look("extend", ":", :string)
-          cfg[:extend] = ext_define_extend
-          found = true
-        elsif look("mixins", ":", "{")
-          cfg[:mixins] = ext_define_mixins
-          found = true
-        elsif look("alternateClassName", ":")
-          cfg[:alternateClassNames] = ext_define_alternate_class_name
-          found = true
-        elsif look(:ident, ":")
-          match(:ident, ":")
-          if look(:string) || look(:number) || look(:regex) ||
-              look("true") || look("false") ||
-              look("null") || look("undefined")
-            # Some key with literal value -- ignore
-            @lex.next
-            found = true
-          elsif look("[")
-            # Some key with array of strings -- ignore
-            found = array_of_strings
-          end
+        if found = ext_define_extend
+          cfg[:extend] = found
+        elsif found = ext_define_mixins
+          cfg[:mixins] = found
+        elsif found = ext_define_alternate_class_name
+          cfg[:alternateClassNames] = found
+        elsif found = ext_define_alias
+          cfg[:alias] = found
+        elsif found = ext_define_xtype
+          cfg[:xtype] = found
+        elsif found = ext_define_requires
+          cfg[:requires] = found
+        elsif found = ext_define_uses
+          cfg[:uses] = found
+        elsif found = ext_define_singleton
+          cfg[:singleton] = found
+        elsif found = ext_define_whatever
+          # ignore this
         end
         match(",") if look(",")
       end
       cfg
     end
 
-    # <ext-define-extend> := "extend" ":" <string>
+    # <extend> := "extend" ":" <string>
     def ext_define_extend
-      match("extend", ":", :string)
+      if look("extend", ":", :string)
+        match("extend", ":", :string)[:value]
+      end
     end
 
-    # <ext-define-alternate-class-name> := "alternateClassName" ":" ( <string> | <array-of-strings> )
+    # <mixins> := "mixins" ":" [ <object-literal> | <array-literal> ]
+    def ext_define_mixins
+      if look("mixins", ":")
+        match("mixins", ":")
+        lit = literal
+        if lit && lit[:type] == :object
+          lit[:value].map {|x| x[:value][:value] }
+        elsif lit && lit[:type] == :array
+          lit[:value].map {|x| x[:value] }
+        else
+          nil
+        end
+      end
+    end
+
+    # <alternate-class-name> := "alternateClassName" ":" <string-or-list>
     def ext_define_alternate_class_name
-      match("alternateClassName", ":")
-      if look(:string)
-        [ match(:string) ]
-      elsif look("[")
-        array_of_strings
+      if look("alternateClassName", ":")
+        match("alternateClassName", ":")
+        string_or_list
+      end
+    end
+
+    # <alias> := "alias" ":" <string-or-list>
+    def ext_define_alias
+      if look("alias", ":")
+        match("alias", ":")
+        string_or_list
+      end
+    end
+
+    # <xtype> := "xtype" ":" <string-or-list>
+    def ext_define_xtype
+      if look("xtype", ":")
+        match("xtype", ":")
+        string_or_list
+      end
+    end
+
+    # <requires> := "requires" ":" <string-or-list>
+    def ext_define_requires
+      if look("requires", ":")
+        match("requires", ":")
+        string_or_list
+      end
+    end
+
+    # <uses> := "uses" ":" <string-or-list>
+    def ext_define_uses
+      if look("uses", ":")
+        match("uses", ":")
+        string_or_list
+      end
+    end
+
+    # <singleton> := "singleton" ":" "true"
+    def ext_define_singleton
+      if look("singleton", ":", "true")
+        match("singleton", ":", "true")
+        true
+      end
+    end
+
+    # <?> := <ident> ":" <literal>
+    def ext_define_whatever
+      if look(:ident, ":")
+        match(:ident, ":")
+        literal
+      end
+    end
+
+    # <string-or-list> := ( <string> | <array-literal> )
+    def string_or_list
+      lit = literal
+      if lit && lit[:type] == :string
+        [ lit[:value] ]
+      elsif lit && lit[:type] == :array
+        lit[:value].map {|x| x[:value] }
       else
         []
       end
     end
 
-    # <ext-define-mixins> := "mixins" ":" "{" [ <ident> ":" <string> ","? ]* "}"
-    def ext_define_mixins
-      match("mixins", ":", "{")
-      mixins = []
-      while look(:ident, ":", :string)
-        mixins << match(:ident, ":", :string)
-        match(",") if look(",")
-      end
-      match("}") if look("}")
-      mixins
-    end
-
-    # <array-of-strings> := "[" [ <string> ","? ]* "]"
-    def array_of_strings
-      match("[")
-      strs = []
-      while look(:string)
-        strs << match(:string)
-        match(",") if look(",")
-      end
-
-      if look("]")
-        match("]")
-        strs
-      else
-        false
-      end
-    end
-
     # <property-literal> := ( <ident> | <string> ) ":" <expression>
     def property_literal
-      left = look(:ident) ? match(:ident) : match(:string)
+      left = look(:ident) ? match(:ident)[:value] : match(:string)[:value]
       match(":")
       right = expression
       return {
@@ -287,21 +396,15 @@ module JsDuck
       }
     end
 
-    # Matches all arguments, returns the value of last match
-    # When the whole sequence doesn't match, throws exception
-    def match(*args)
-      if look(*args)
-        last = nil
-        args.length.times { last = @lex.next }
-        last
-      else
-        throw "Expected: " + args.join(", ")
+    # Like look() but tries to match as the first argument all the
+    # names listed in @ext_namespaces
+    def ext_look(placeholder, *args)
+      @ext_namespaces.each do |ns|
+        return true if look(ns, *args)
       end
+      return false
     end
 
-    def look(*args)
-      @lex.look(*args)
-    end
   end
 
 end
