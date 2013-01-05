@@ -15,26 +15,37 @@ class File
 end
 
 require 'jsduck/app'
-require 'optparse'
+require 'jsduck/options'
 
-app = JsDuck::App.new
-
-app.output_dir = output_path
-app.verbose = verbose
-app.processes = 0
-app.template_dir = "target/jsduck_template"
+options = JsDuck::Options.new
+options.output_dir = output_path
+options.processes = 0
+options.template_dir = "target/jsduck_template"
+options.guides = guides 
+if File.exists?(welcome_path)
+  options.welcome = welcome_path
+end
+options.title = title
+options.header = header
 
 js_files = []
 # scan directory for .js files
-  if File.exists?(input_path)
-    if File.directory?(input_path)
-      Dir[input_path+"/**/*.{js,css,scss}"].each {|f| js_files << f }
+  for d in input_path
+    if File.exists?(d)
+      if File.directory?(d)
+        Dir[d+"/**/*.{js,css,scss}"].each {|f| js_files << f }
+      else
+        js_files << d
+      end
     else
-      js_files << input_path
+      puts "Warning: File #{d} not found"
     end
-  else
-    puts "Warning: File #{input_path} not found"
-  end
-app.input_files = js_files
+  end  
+options.input_files = js_files
 
+if(builtin_classes)
+	options.read_filenames("target/js-classes")
+end
+
+app = JsDuck::App.new(options)
 app.run()
