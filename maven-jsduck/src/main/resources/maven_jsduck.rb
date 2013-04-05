@@ -27,6 +27,7 @@ if File.exists?(welcome_path)
 end
 options.title = title
 options.header = header
+options.eg_iframe = eg_iframe
 
 js_files = []
 # scan directory for .js files

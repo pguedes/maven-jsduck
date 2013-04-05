@@ -97,6 +97,13 @@ public class JsDuckMojo extends AbstractMojo {
 	 */
 	private boolean builtinClasses;
 
+	/**
+	 * Location of example iframe used in the live preview feature
+	 *
+	 * @parameter
+	 */
+	private String egIframe;
+
 	public void execute() throws MojoExecutionException {
 		getLog().info("Producing JavaScript API documentation using jsduck.");
 		if (verbose) {
@@ -287,6 +294,7 @@ public class JsDuckMojo extends AbstractMojo {
 			jruby.put("title", title);
 			jruby.put("header", header);	
 			jruby.put("builtin_classes", builtinClasses);	
+			jruby.put("eg_iframe", egIframe);
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
