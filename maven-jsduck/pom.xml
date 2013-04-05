@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nl.secondfloor.mojo.jsduck</groupId>
 	<artifactId>jsduck-maven-plugin</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.1.1-SNAPSHOT</version>
 	<name>jsduck-maven-plugin</name>
 	<description>Maven plugin for jsduck javascript document generation.</description>
 	<packaging>maven-plugin</packaging>
