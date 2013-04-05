@@ -49,6 +49,7 @@ Configuration
 |  title                 | The title to use for the documentation.                     |  ${project.name} ${project.version}     |
 |  header                | The header to use for the documentation.                    |  ${project.name} ${project.version} API |
 |  guides                | The guides to include                                       |                                         |
+|  egIframe              | Sample iframe for running inline examples                   |                                         |
 
 To change the configuration while running command line use the plugin name as prefix: -Djsduck.verbose=false.
 
