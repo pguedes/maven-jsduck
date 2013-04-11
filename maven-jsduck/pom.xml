@@ -103,6 +103,14 @@
 			<plugin>
 				<artifactId>maven-plugin-plugin</artifactId>
 				<version>3.2</version>
+				<executions>
+					<execution>
+						<id>generate-help</id>
+						<goals>
+							<goal>helpmojo</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
