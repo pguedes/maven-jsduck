@@ -45,7 +45,7 @@ public class JsDuckMojo extends AbstractMojo {
 	private String targetDirectory;
 	
 	/**
-	 * @parameter default-value="src/main/webapp/js"
+	 * @parameter property="javascriptDirectory" default-value="src/main/webapp/js"
 	 */
 	private String javascriptDirectory;
 
