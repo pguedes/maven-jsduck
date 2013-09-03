@@ -62,6 +62,13 @@ public class JsDuckMojo extends AbstractMojo {
 	private boolean verbose;
 	
 	/**
+	 * Custom CSS
+	 * 
+	 * @parameter default-value=""
+	 */
+	private String css;
+	
+	/**
 	 * The welcome page for the API documentation
 	 * 
 	 * @parameter default-value="src/main/jsduck/welcome.html"
@@ -89,6 +96,13 @@ public class JsDuckMojo extends AbstractMojo {
 	 * @parameter default-value="${project.name} ${project.version} API"
 	 */
 	private String header;
+	
+	/**
+	 * The footer for the documentation
+	 * 
+	 * @parameter default-value="Generated on ${timestamp} by maven-jsduck."
+	 */
+	private String footer;
 	
 	/**
 	 * Whether to document built in classes (Array, object etc)
@@ -151,7 +165,7 @@ public class JsDuckMojo extends AbstractMojo {
 		templateDir.mkdirs();
 		try {
 			URI templateUri = this.getClass().getClassLoader()
-					.getResource("template").toURI();
+					.getResource("template-min").toURI();
 			if (verbose) {
 				getLog().info(
 						String.format("Copying templates from %s to %s.",
@@ -293,8 +307,10 @@ public class JsDuckMojo extends AbstractMojo {
 			jruby.put("welcome_path", welcome);
 			jruby.put("title", title);
 			jruby.put("header", header);	
+			jruby.put("footer", footer);
 			jruby.put("builtin_classes", builtinClasses);	
 			jruby.put("eg_iframe", egIframe);
+			jruby.put("css", css);
 
 			jruby.runScriptlet(script);
 		} catch (IOException e) {
