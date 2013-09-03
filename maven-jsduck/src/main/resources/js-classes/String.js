@@ -125,7 +125,7 @@
  *
  *     String.fromCharCode(65,66,67)
  *
- * @param {Number} num1, ..., numN A sequence of numbers that are Unicode values.
+ * @param {Number...} numbers A sequence of numbers that are Unicode values.
  * @return {String} String containing characters from encoding.
  */
 
@@ -359,9 +359,7 @@
 
 /**
  * @method concat
- * Combines the text of two strings and returns a new string.
- *
- * `concat` combines the text from one or more strings and returns a new string. Changes to the text in
+ * Combines combines the text from one or more strings and returns a new string. Changes to the text in
  * one string do not affect the other string.
  *
  * The following example combines strings into a new string.
@@ -369,7 +367,7 @@
  *     var hello = "Hello, ";
  *     console.log(hello.concat("Kevin", " have a nice day.")); // Hello, Kevin have a nice day.
  *
- * @param {String} string2...stringN
+ * @param {String...} strings The strings to concatenate.
  * @return {String} Result of both strings.
  */
 
@@ -949,7 +947,7 @@
  *
  * The following example displays the string "sencha":
  *
- *     var upperText="sencha";
+ *     var upperText="SENCHA";
  *     document.write(upperText.toLocaleLowerCase());
  *
  * @return {String} Returns value of the string in lowercase.
@@ -1033,4 +1031,22 @@
  *     alert(x.valueOf())          // Displays "Hello world"
  *
  * @return {String} Returns value of string.
+ */
+
+// ECMAScript 5 methods
+
+/**
+ * @method trim
+ * Removes whitespace from both ends of the string.
+ *
+ * Does not affect the value of the string itself.
+ *
+ * The following example displays the lowercase string `"foo"`:
+ *
+ *     var orig = "   foo  ";
+ *     alert(orig.trim());
+ *
+ * **NOTE:** This method is part of the ECMAScript 5 standard.
+ *
+ * @return {String} A string stripped of whitespace on both ends.
  */
