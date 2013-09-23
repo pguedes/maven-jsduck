@@ -1,12 +1,13 @@
 require 'json/version'
+require 'json/generic_object'
 
 module JSON
   class << self
-    # If _object_ is string-like parse the string and return the parsed result
+    # If _object_ is string-like, parse the string and return the parsed result
     # as a Ruby data structure. Otherwise generate a JSON text from the Ruby
     # data structure object and return it.
     #
-    # The _opts_ argument is passed through to generate/parse respectively, see
+    # The _opts_ argument is passed through to generate/parse respectively. See
     # generate and parse for their documentation.
     def [](object, opts = {})
       if object.respond_to? :to_str
@@ -16,7 +17,7 @@ module JSON
       end
     end
 
-    # Returns the JSON parser class, that is used by JSON. This might be either
+    # Returns the JSON parser class that is used by JSON. This is either
     # JSON::Ext::Parser or JSON::Pure::Parser.
     attr_reader :parser
 
@@ -28,7 +29,7 @@ module JSON
     end
 
     # Return the constant located at _path_. The format of _path_ has to be
-    # either ::A::B::C or A::B::C. In any case A has to be located at the top
+    # either ::A::B::C or A::B::C. In any case, A has to be located at the top
     # level (absolute namespace path?). If there doesn't exist a constant at
     # the given path, an ArgumentError is raised.
     def deep_const_get(path) # :nodoc:
@@ -81,15 +82,15 @@ module JSON
       $VERBOSE = old
     end
 
-    # Returns the JSON generator modul, that is used by JSON. This might be
+    # Returns the JSON generator module that is used by JSON. This is
     # either JSON::Ext::Generator or JSON::Pure::Generator.
     attr_reader :generator
 
-    # Returns the JSON generator state class, that is used by JSON. This might
-    # be either JSON::Ext::Generator::State or JSON::Pure::Generator::State.
+    # Returns the JSON generator state class that is used by JSON. This is
+    # either JSON::Ext::Generator::State or JSON::Pure::Generator::State.
     attr_accessor :state
 
-    # This is create identifier, that is used to decide, if the _json_create_
+    # This is create identifier, which is used to decide if the _json_create_
     # hook of a class should be called. It defaults to 'json_class'.
     attr_accessor :create_id
   end
@@ -102,12 +103,18 @@ module JSON
   MinusInfinity = -Infinity
 
   # The base exception for JSON errors.
-  class JSONError < StandardError; end
+  class JSONError < StandardError
+    def self.wrap(exception)
+      obj = new("Wrapped(#{exception.class}): #{exception.message.inspect}")
+      obj.set_backtrace exception.backtrace
+      obj
+    end
+  end
 
-  # This exception is raised, if a parser error occurs.
+  # This exception is raised if a parser error occurs.
   class ParserError < JSONError; end
 
-  # This exception is raised, if the nesting of parsed datastructures is too
+  # This exception is raised if the nesting of parsed data structures is too
   # deep.
   class NestingError < ParserError; end
 
@@ -115,13 +122,13 @@ module JSON
   class CircularDatastructure < NestingError; end
   # :startdoc:
 
-  # This exception is raised, if a generator or unparser error occurs.
+  # This exception is raised if a generator or unparser error occurs.
   class GeneratorError < JSONError; end
   # For backwards compatibility
   UnparserError = GeneratorError
 
-  # This exception is raised, if the required unicode support is missing on the
-  # system. Usually this means, that the iconv library is not installed.
+  # This exception is raised if the required unicode support is missing on the
+  # system. Usually this means that the iconv library is not installed.
   class MissingUnicodeSupport < JSONError; end
 
   module_function
@@ -131,16 +138,16 @@ module JSON
   # _opts_ can have the following
   # keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false, it defaults
-  #   to 19.
+  #   structures. Disable depth checking with :max_nesting => false. It defaults
+  #   to 100.
   # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
   #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
   #   to false.
   # * *symbolize_names*: If set to true, returns symbols for the names
-  #   (keys) in a JSON object. Otherwise strings are returned, which is also
+  #   (keys) in a JSON object. Otherwise strings are returned. Strings are
   #   the default.
   # * *create_additions*: If set to false, the Parser doesn't create
-  #   additions even if a matchin class and create_id was found. This option
+  #   additions even if a matching class and create_id was found. This option
   #   defaults to true.
   # * *object_class*: Defaults to Hash
   # * *array_class*: Defaults to Array
@@ -149,19 +156,19 @@ module JSON
   end
 
   # Parse the JSON document _source_ into a Ruby data structure and return it.
-  # The bang version of the parse method, defaults to the more dangerous values
+  # The bang version of the parse method defaults to the more dangerous values
   # for the _opts_ hash, so be sure only to parse trusted _source_ documents.
   #
   # _opts_ can have the following keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
   #   structures. Enable depth checking with :max_nesting => anInteger. The parse!
-  #   methods defaults to not doing max depth checking: This can be dangerous,
+  #   methods defaults to not doing max depth checking: This can be dangerous
   #   if someone wants to fill up your stack.
   # * *allow_nan*: If set to true, allow NaN, Infinity, and -Infinity in
   #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
   #   to true.
   # * *create_additions*: If set to false, the Parser doesn't create
-  #   additions even if a matchin class and create_id was found. This option
+  #   additions even if a matching class and create_id was found. This option
   #   defaults to true.
   def parse!(source, opts = {})
     opts = {
@@ -185,20 +192,24 @@ module JSON
   # * *indent*: a string used to indent levels (default: ''),
   # * *space*: a string that is put after, a : or , delimiter (default: ''),
   # * *space_before*: a string that is put before a : pair delimiter (default: ''),
-  # * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
+  # * *object_nl*: a string that is put at the end of a JSON object (default: ''),
   # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
   # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
-  #   generated, otherwise an exception is thrown, if these values are
+  #   generated, otherwise an exception is thrown if these values are
   #   encountered. This options defaults to false.
   # * *max_nesting*: The maximum depth of nesting allowed in the data
   #   structures from which JSON is to be generated. Disable depth checking
-  #   with :max_nesting => false, it defaults to 19.
+  #   with :max_nesting => false, it defaults to 100.
   #
   # See also the fast_generate for the fastest creation method with the least
   # amount of sanity checks, and the pretty_generate method for some
-  # defaults for a pretty output.
+  # defaults for pretty output.
   def generate(obj, opts = nil)
-    state = SAFE_STATE_PROTOTYPE.dup
+    if State === opts
+      state, opts = opts, nil
+    else
+      state = SAFE_STATE_PROTOTYPE.dup
+    end
     if opts
       if opts.respond_to? :to_hash
         opts = opts.to_hash
@@ -223,9 +234,13 @@ module JSON
   # This method disables the checks for circles in Ruby objects.
   #
   # *WARNING*: Be careful not to pass any Ruby data structures with circles as
-  # _obj_ argument, because this will cause JSON to go into an infinite loop.
+  # _obj_ argument because this will cause JSON to go into an infinite loop.
   def fast_generate(obj, opts = nil)
-    state = FAST_STATE_PROTOTYPE.dup
+    if State === opts
+      state, opts = opts, nil
+    else
+      state = FAST_STATE_PROTOTYPE.dup
+    end
     if opts
       if opts.respond_to? :to_hash
         opts = opts.to_hash
@@ -249,10 +264,14 @@ module JSON
   # The returned document is a prettier form of the document returned by
   # #unparse.
   #
-  # The _opts_ argument can be used to configure the generator, see the
+  # The _opts_ argument can be used to configure the generator. See the
   # generate method for a more detailed explanation.
   def pretty_generate(obj, opts = nil)
-    state = PRETTY_STATE_PROTOTYPE.dup
+    if State === opts
+      state, opts = opts, nil
+    else
+      state = PRETTY_STATE_PROTOTYPE.dup
+    end
     if opts
       if opts.respond_to? :to_hash
         opts = opts.to_hash
@@ -272,26 +291,51 @@ module JSON
   module_function :pretty_unparse
   # :startdoc:
 
+  class << self
+    # The global default options for the JSON.load method:
+    #  :max_nesting: false
+    #  :allow_nan:   true
+    #  :quirks_mode: true
+    attr_accessor :load_default_options
+  end
+  self.load_default_options = {
+    :max_nesting      => false,
+    :allow_nan        => true,
+    :quirks_mode      => true,
+    :create_additions => true,
+  }
+
   # Load a ruby data structure from a JSON _source_ and return it. A source can
-  # either be a string-like object, an IO like object, or an object responding
+  # either be a string-like object, an IO-like object, or an object responding
   # to the read method. If _proc_ was given, it will be called with any nested
-  # Ruby object as an argument recursively in depth first order.
+  # Ruby object as an argument recursively in depth first order. To modify the
+  # default options pass in the optional _options_ argument as well.
+  #
+  # BEWARE: This method is meant to serialise data from trusted user input,
+  # like from your own database server or clients under your control, it could
+  # be dangerous to allow untrusted users to pass JSON sources into it. The
+  # default options for the parser can be changed via the load_default_options
+  # method.
   #
   # This method is part of the implementation of the load/dump interface of
   # Marshal and YAML.
-  def load(source, proc = nil)
+  def load(source, proc = nil, options = {})
+    opts = load_default_options.merge options
     if source.respond_to? :to_str
       source = source.to_str
     elsif source.respond_to? :to_io
       source = source.to_io.read
-    else
+    elsif source.respond_to?(:read)
       source = source.read
     end
-    result = parse(source, :max_nesting => false, :allow_nan => true)
+    if opts[:quirks_mode] && (source.nil? || source.empty?)
+      source = 'null'
+    end
+    result = parse(source, opts)
     recurse_proc(result, &proc) if proc
     result
   end
-  
+
   # Recursively calls passed _Proc_ if the parsed data structure is an _Array_ or _Hash_
   def recurse_proc(result, &proc)
     case result
@@ -309,15 +353,31 @@ module JSON
   alias restore load
   module_function :restore
 
+  class << self
+    # The global default options for the JSON.dump method:
+    #  :max_nesting: false
+    #  :allow_nan:   true
+    #  :quirks_mode: true
+    attr_accessor :dump_default_options
+  end
+  self.dump_default_options = {
+    :max_nesting => false,
+    :allow_nan   => true,
+    :quirks_mode => true,
+  }
+
   # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
   # the result.
   #
-  # If anIO (an IO like object or an object that responds to the write method)
+  # If anIO (an IO-like object or an object that responds to the write method)
   # was given, the resulting JSON is written to it.
   #
-  # If the number of nested arrays or objects exceeds _limit_ an ArgumentError
+  # If the number of nested arrays or objects exceeds _limit_, an ArgumentError
   # exception is raised. This argument is similar (but not exactly the
   # same!) to the _limit_ argument in Marshal.dump.
+  #
+  # The default options for the generator can be changed via the
+  # dump_default_options method.
   #
   # This method is part of the implementation of the load/dump interface of
   # Marshal and YAML.
@@ -329,8 +389,9 @@ module JSON
         anIO = nil
       end
     end
-    limit ||= 0
-    result = generate(obj, :allow_nan => true, :max_nesting => limit)
+    opts = JSON.dump_default_options
+    limit and opts.update(:max_nesting => limit)
+    result = generate(obj, opts)
     if anIO
       anIO.write result
       anIO
@@ -351,7 +412,10 @@ module JSON
   end
 
   # Shortuct for iconv.
-  if ::String.method_defined?(:encode)
+  if ::String.method_defined?(:encode) &&
+    # XXX Rubinius doesn't support ruby 1.9 encoding yet
+    defined?(RUBY_ENGINE) && RUBY_ENGINE != 'rbx'
+  then
     # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)
       string.encode(to, from)
@@ -360,7 +424,7 @@ module JSON
     require 'iconv'
     # Encodes string using _iconv_ library
     def self.iconv(to, from, string)
-      Iconv.iconv(to, from, string).first
+      Iconv.conv(to, from, string)
     end
   end
 
@@ -396,11 +460,11 @@ module ::Kernel
     nil
   end
 
-  # If _object_ is string-like parse the string and return the parsed result as
-  # a Ruby data structure. Otherwise generate a JSON text from the Ruby data
+  # If _object_ is string-like, parse the string and return the parsed result as
+  # a Ruby data structure. Otherwise, generate a JSON text from the Ruby data
   # structure object and return it.
   #
-  # The _opts_ argument is passed through to generate/parse respectively, see
+  # The _opts_ argument is passed through to generate/parse respectively. See
   # generate and parse for their documentation.
   def JSON(object, *args)
     if object.respond_to? :to_str
@@ -413,10 +477,10 @@ end
 
 # Extends any Class to include _json_creatable?_ method.
 class ::Class
-  # Returns true, if this class can be used to create an instance
+  # Returns true if this class can be used to create an instance
   # from a serialised JSON string. The class has to implement a class
-  # method _json_create_ that expects a hash as first parameter, which includes
-  # the required data.
+  # method _json_create_ that expects a hash as first parameter. The hash
+  # should include the required data.
   def json_creatable?
     respond_to?(:json_create)
   end
