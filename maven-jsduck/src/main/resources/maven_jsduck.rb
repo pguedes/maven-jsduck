@@ -34,9 +34,15 @@ if footer && footer != ""
   options.footer = footer
 end
 
+input_path_array = input_path.to_a
+
+if(builtin_classes)
+	input_path_array << "target/js-classes"
+end
+
 js_files = []
 # scan directory for .js files
-  for d in input_path
+  for d in input_path_array
     if File.exists?(d)
       if File.directory?(d)
         Dir[d+"/**/*.{js,css,scss}"].each {|f| js_files << f }
@@ -48,10 +54,6 @@ js_files = []
     end
   end  
 options.input_files = js_files
-
-if(builtin_classes)
-	options.read_filenames("target/js-classes")
-end
 
 app = JsDuck::App.new(options)
 app.run()
